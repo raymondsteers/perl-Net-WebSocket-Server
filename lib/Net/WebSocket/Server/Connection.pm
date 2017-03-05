@@ -20,6 +20,9 @@ sub new {
     server        => undef,
     nodelay       => 1,
     max_send_size => eval { Protocol::WebSocket::Frame->new->{max_payload_size} } || 65536,
+    max_recv_size => eval { Protocol::WebSocket::Frame->new->{max_payload_size} } || 65536,
+    max_fragments => eval { Protocol::WebSocket::Frame->new->{max_fragments_amount} } || 128,
+    max_mess_size => eval { Protocol::WebSocket::Frame->new->{max_message_size} } || 65536,
     on_handshake  => sub{},
     on_ready      => sub{},
     on_disconnect => sub{},
@@ -85,6 +88,15 @@ sub max_send_size {
   my $self = shift;
   $self->{max_send_size} = $_[0] if @_;
   return $self->{max_send_size};
+}
+
+sub max_recv_size {
+  my $self = shift;
+  if (@_) {
+    croak "Cannot change max_recv_size; handshake is already complete" if $self->{parser};
+    $self->{max_recv_size} = $_[0];
+  }
+  return $self->{max_recv_size};
 }
 
 
@@ -159,7 +171,7 @@ sub recv {
       syswrite($self->{socket}, $self->{handshake}->to_string);
       delete $self->{handshake};
 
-      $self->{parser} = new Protocol::WebSocket::Frame();
+      $self->{parser} = new Protocol::WebSocket::Frame(max_payload_size => $self->{max_recv_size}, max_fragments_amount => $self->{max_fragments}, max_message_size => $self->{max_mess_size});
       setsockopt($self->{socket}, IPPROTO_TCP, TCP_NODELAY, 1) if $self->{nodelay};
       $self->_event('on_ready');
     }
@@ -201,7 +213,7 @@ __END__
 
 =head1 NAME
 
-Net::WebSocket::Server::Connection - A WebSocket connection managed by L<Net::WebSocket::Server|Net::WebSocket::Server>. 
+Net::WebSocket::Server::Connection - A WebSocket connection managed by L<Net::WebSocket::Server|Net::WebSocket::Server>.
 
 =head1 SYNOPSIS
 
@@ -257,6 +269,15 @@ C<< Protocol::WebSocket::Frame->new->{max_payload_size} >>.
 
 When building an outgoing message, this value is passed to new instances of
 L<Protocol::WebSocket::Frame|Protocol::WebSocket::Frame> as the
+C<max_payload_size> parameter.
+
+=item C<max_recv_size>
+
+The maximum size of an incoming payload.  Default
+C<< Protocol::WebSocket::Frame->new->{max_payload_size} >>.
+
+Once the handshake process is complete, this value is passed to the parser
+instance of L<Protocol::WebSocket::Frame|Protocol::WebSocket::Frame> as the
 C<max_payload_size> parameter.
 
 =item C<on_C<$event>>
@@ -325,6 +346,17 @@ newly-set value.
 When building an outgoing message, this value is passed to new instances of
 L<Protocol::WebSocket::Frame|Protocol::WebSocket::Frame> as the
 C<max_payload_size> parameter.
+
+=item C<max_recv_size([I<$size>])>
+
+Sets the maximum allowed size of an incoming payload.  Returns the current or
+newly-set value.
+
+Once the handshake process is complete, this value is passed to the parser
+instance of L<Protocol::WebSocket::Frame|Protocol::WebSocket::Frame> as the
+C<max_payload_size> parameter.
+
+This value cannot be modified once the handshake is completed.
 
 =item C<disconnect(I<$code>, I<$reason>)>
 
