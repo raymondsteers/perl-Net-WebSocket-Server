@@ -99,23 +99,6 @@ sub max_recv_size {
   return $self->{max_recv_size};
 }
 
-sub max_fragments {
-  my $self = shift;
-  if (@_) {
-    croak "Cannot change max_fragments; handshake is already complete" if $self->{parser};
-    $self->{max_fragments} = $_[0];
-  }
-  return $self->{max_fragments};
-}
-
-sub max_mess_size {
-  my $self = shift;
-  if (@_) {
-    croak "Cannot change max_mess_size; handshake is already complete" if $self->{parser};
-    $self->{max_mess_size} = $_[0];
-  }
-  return $self->{max_mess_size};
-}
 
 ### methods
 
