@@ -1,3 +1,35 @@
+Notes about my modification to this module:
+
+This requires that you also have the modified Frame.pm from https://github.com/raymondsteers/protocol-websocket 
+
+Problem:
+Since WebSocket messages are fragmentable, it's pretty easy for someone to create an attack if they can keep the fragment
+payload below the default 65k and just send 128 frame fragments. That's an 8meg message that will block all other connection 
+traffic. The max frames is settable in the frame module but inaccessable from this module. Even so, limiting it is 
+problematic as you have no idea how a particular browser will fragment messages. Chrome starts fragmenting as soon as
+messages are over 128k (131072 bytes to be exact), but this is not something you can rely on.
+
+Solution:
+A max message size enforcement that is more than just the number of frags times the payload. (A bad client 
+can potentially vary each payload size easily so straight multiplication won't work)
+
+Implementation:
+my $ws = Net::WebSocket::Server->new(
+    listen => $ssl_server,
+    on_connect => sub {
+        my ($serv, $conn) = @_;
+	$conn->max_send_size(65536);# only affect OUTGOING messages from server to client
+	$conn->max_recv_size(65536);# only affect INCOMING messages from client to server
+	$conn->max_fragments(128);# only affect INCOMING messages from client to server
+	$conn->max_mess_size(65536);# only affect INCOMING messages from client to server
+        $conn->on(
+            handshake => sub {
+	    ....
+
+Please see https://github.com/raymondsteers/protocol-websocket for notes on the frame module
+
+------------------------ original below -----------------------------------
+
 Net::WebSocket::Server -  A straightforward Perl WebSocket server with minimal dependencies. 
 
 This module implements the details of a WebSocket server and invokes the
