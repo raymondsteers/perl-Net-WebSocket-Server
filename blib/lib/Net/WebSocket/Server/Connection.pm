@@ -99,6 +99,23 @@ sub max_recv_size {
   return $self->{max_recv_size};
 }
 
+sub max_fragments {
+  my $self = shift;
+  if (@_) {
+    croak "Cannot change max_fragments; handshake is already complete" if $self->{parser};
+    $self->{max_fragments} = $_[0];
+  }
+  return $self->{max_fragments};
+}
+
+sub max_mess_size {
+  my $self = shift;
+  if (@_) {
+    croak "Cannot change max_mess_size; handshake is already complete" if $self->{parser};
+    $self->{max_mess_size} = $_[0];
+  }
+  return $self->{max_mess_size};
+}
 
 ### methods
 
@@ -145,6 +162,12 @@ sub send {
     return;
   }
 
+  #modified by Ray to not overflow the 16k SSL frame size
+  # taken from https://webcache.googleusercontent.com/search?q=cache:Gx2xrOWO52wJ:www.perlmonks.org/%3Fnode_id%3D452529+&cd=2&hl=en&ct=clnk&gl=bg
+  while( 16384 < length $bytes ) {
+    syswrite( $self->{socket}, $bytes, 16384 );
+    substr( $bytes, 0, 16384, '' );
+  }
   syswrite($self->{socket}, $bytes);
 }
 
