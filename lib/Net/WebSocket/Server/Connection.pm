@@ -2,7 +2,7 @@ package Net::WebSocket::Server::Connection;
 
 use 5.006;
 use strict;
-use warnings FATAL => 'all';
+use warnings;# FATAL => 'all';
 
 use Carp;
 use Protocol::WebSocket::Handshake::Server;
