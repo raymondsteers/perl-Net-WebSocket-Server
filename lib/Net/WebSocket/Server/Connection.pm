@@ -162,6 +162,12 @@ sub send {
     return;
   }
 
+  #modified by Ray to not overflow the 16k SSL frame size
+  # taken from https://webcache.googleusercontent.com/search?q=cache:Gx2xrOWO52wJ:www.perlmonks.org/%3Fnode_id%3D452529+&cd=2&hl=en&ct=clnk&gl=bg
+  while( 16384 < length $bytes ) {
+    syswrite( $self->{socket}, $bytes, 16384 );
+    substr( $bytes, 0, 16384, '' );
+  }
   syswrite($self->{socket}, $bytes);
 }
 
